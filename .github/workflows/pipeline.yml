@@ -43,35 +43,42 @@ jobs:
           ls -R
 
   deploy:
-    runs-on: ubuntu-latest
-    needs: validate
+  runs-on: ubuntu-latest
+  needs: validate
 
-    steps:
-      - uses: actions/checkout@v4
+  steps:
+    - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
 
-      - run: pip install -r requirements.txt
+    - run: pip install -r requirements.txt
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: model-info
-          path: .
+    - uses: actions/download-artifact@v4
+      with:
+        name: model-info
+        path: .
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: mlruns-artifact
-          path: ./mlruns
+    - uses: actions/download-artifact@v4
+      with:
+        name: mlruns-artifact
+        path: .        
 
-      - name: Check Threshold
-        run: python check_threshold.py
+    - name: Debug artifacts
+      run: |
+        echo "=== model_info.txt ==="
+        cat model_info.txt
+        echo "=== mlruns tree ==="
+        find mlruns -type f | head -30
 
-      - name: Mock Build
-        run: |
-          echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
+    - name: Check Threshold
+      run: python check_threshold.py
 
-      - name: Docker Build
-        run: |
-          docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .
+    - name: Mock Build
+      run: |
+        echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
+
+    - name: Docker Build
+      run: |
+        docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .

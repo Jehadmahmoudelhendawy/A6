@@ -12,7 +12,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 batch_size = 64
 lr = 0.001
-epochs = 1
+epochs = 2
 
 transform = transforms.Compose([
     transforms.ToTensor(),

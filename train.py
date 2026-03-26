@@ -11,7 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 batch_size = 64
 lr = 0.001
-epochs = 1
+epochs = 5  # غيرها لـ 1 عشان تعمل fail
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -33,75 +33,57 @@ test_dataset = torchvision.datasets.MNIST(
 )
 
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=batch_size)
 
-class Classifier(nn.Module):
+class Model(nn.Module):
     def __init__(self):
         super().__init__()
-        self.model = nn.Sequential(
+        self.net = nn.Sequential(
             nn.Flatten(),
-            nn.Linear(28 * 28, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
+            nn.Linear(784, 128),
             nn.ReLU(),
             nn.Linear(128, 10)
         )
 
     def forward(self, x):
-        return self.model(x)
+        return self.net(x)
 
-model = Classifier().to(device)
+model = Model().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-# Use environment variable for tracking URI (set via GitHub secret)
-tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
-mlflow.set_tracking_uri(tracking_uri)
-mlflow.set_experiment("Assignment5_Pipeline")
+mlflow.set_tracking_uri("file:./mlruns")
+mlflow.set_experiment("A5")
 
 with mlflow.start_run() as run:
-    mlflow.log_param("batch_size", batch_size)
-    mlflow.log_param("learning_rate", lr)
-    mlflow.log_param("epochs", epochs)
 
     for epoch in range(epochs):
         model.train()
-        running_loss = 0.0
-
-        for images, labels in train_loader:
-            images, labels = images.to(device), labels.to(device)
+        for x, y in train_loader:
+            x, y = x.to(device), y.to(device)
 
             optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
+            out = model(x)
+            loss = criterion(out, y)
             loss.backward()
             optimizer.step()
-
-            running_loss += loss.item()
-
-        avg_loss = running_loss / len(train_loader)
-        mlflow.log_metric("train_loss", avg_loss, step=epoch)
-        print(f"Epoch [{epoch + 1}/{epochs}], Loss: {avg_loss:.4f}")
 
     model.eval()
     correct = 0
     total = 0
 
     with torch.no_grad():
-        for images, labels in test_loader:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            _, predicted = torch.max(outputs, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+        for x, y in test_loader:
+            x, y = x.to(device), y.to(device)
+            out = model(x)
+            _, pred = torch.max(out, 1)
+            total += y.size(0)
+            correct += (pred == y).sum().item()
 
-    accuracy = correct / total
-    print(f"Accuracy: {accuracy:.4f}")
+    acc = correct / total
+    print("Accuracy:", acc)
 
-    mlflow.log_metric("accuracy", accuracy)
-    mlflow.pytorch.log_model(model, "model")
+    mlflow.log_metric("accuracy", acc)
 
     with open("model_info.txt", "w") as f:
         f.write(run.info.run_id)
-
-    print(f"Run ID saved: {run.info.run_id}")

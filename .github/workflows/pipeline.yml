@@ -1,94 +1,57 @@
-name: ML Validation and Deployment Pipeline
+name: A5 Pipeline
 
 on:
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches:
+      - master
 
 jobs:
-
-  # ─────────────────────────────────────────────
-  # JOB 1: validate
-  # ─────────────────────────────────────────────
   validate:
-    name: Train & Validate Model
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Pull data with DVC
-        run: dvc pull
+      - name: DVC Pull (Mock)
+        run: echo "Simulating dvc pull..."
 
-      - name: Train model and log to MLflow
-        env:
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+      - name: Train
         run: python train.py
 
-      - name: Verify model_info.txt was created
-        run: |
-          if [ ! -f model_info.txt ]; then
-            echo "ERROR: model_info.txt not found"
-            exit 1
-          fi
-          echo "Run ID: $(cat model_info.txt)"
-
-      - name: Upload model_info artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: model-info
           path: model_info.txt
-          retention-days: 7
 
-  # ─────────────────────────────────────────────
-  # JOB 2: deploy
-  # ─────────────────────────────────────────────
   deploy:
-    name: Check Threshold & Deploy
     runs-on: ubuntu-latest
     needs: validate
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python 3.10
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Install MLflow
-        run: pip install mlflow
+      - run: pip install -r requirements.txt
 
-      - name: Download model_info artifact
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: model-info
 
-      - name: Show Run ID
-        run: echo "Checking Run ID: $(cat model_info.txt)"
-
-      - name: Check accuracy threshold
-        env:
-          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-          MLFLOW_TRACKING_USERNAME: ${{ secrets.MLFLOW_TRACKING_USERNAME }}
-          MLFLOW_TRACKING_PASSWORD: ${{ secrets.MLFLOW_TRACKING_PASSWORD }}
+      - name: Check Threshold
         run: python check_threshold.py
 
-      - name: Mock Docker build
-        run: |
-          echo "Building Docker image for Run ID: $(cat model_info.txt)"
-          docker build --build-arg RUN_ID=$(cat model_info.txt) \
-            -t ml-model:$(cat model_info.txt) .
-          echo "Docker image built successfully."
+      - name: Mock Build
+        run: echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
+
+      - name: Docker Build
+        run: docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .

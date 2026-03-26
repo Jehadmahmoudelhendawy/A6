@@ -5,4 +5,4 @@ ENV RUN_ID=${RUN_ID}
 
 WORKDIR /app
 
-CMD echo "Downloading model for Run ID: ${RUN_ID}" && echo "Model ready"
+CMD echo "Downloading model for RUN_ID=${RUN_ID}" && echo "Done"

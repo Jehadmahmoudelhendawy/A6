@@ -35,6 +35,12 @@ jobs:
         with:
           name: mlruns-artifact
           path: mlruns
+      - name: Debug after training
+        run: |
+          echo "Run ID:"
+          cat model_info.txt
+          echo "Tree before upload:"
+          ls -R
 
   deploy:
     runs-on: ubuntu-latest
@@ -57,7 +63,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: mlruns-artifact
-          path: .
+          path: ./mlruns
 
       - name: Check Threshold
         run: python check_threshold.py

@@ -1,4 +1,4 @@
-THRESHOLD = 0.85
+THRESHOLD = 0.98
 
 with open("model_info.txt") as f:
     run_id = f.read().strip()

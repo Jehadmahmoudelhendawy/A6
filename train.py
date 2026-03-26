@@ -7,11 +7,12 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 
+os.makedirs("mlruns", exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 batch_size = 64
 lr = 0.001
-epochs = 10  
+epochs = 5
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -53,10 +54,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
 mlflow.set_tracking_uri("file:./mlruns")
-mlflow.set_experiment("A5")
+exp = mlflow.set_experiment("A5")
 
-with mlflow.start_run() as run:
-
+with mlflow.start_run(experiment_id=exp.experiment_id) as run:
     for epoch in range(epochs):
         model.train()
         for x, y in train_loader:

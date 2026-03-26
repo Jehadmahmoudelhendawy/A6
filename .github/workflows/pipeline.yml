@@ -52,17 +52,20 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: model-info
+          path: .
 
       - uses: actions/download-artifact@v4
         with:
           name: mlruns-artifact
-          path: mlruns
+          path: .
 
       - name: Check Threshold
         run: python check_threshold.py
 
       - name: Mock Build
-        run: echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
+        run: |
+          echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
 
       - name: Docker Build
-        run: docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .
+        run: |
+          docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .

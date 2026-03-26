@@ -54,7 +54,9 @@ model = Classifier().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=lr)
 
-mlflow.set_tracking_uri(os.environ["MLFLOW_TRACKING_URI"])
+# Use environment variable for tracking URI (set via GitHub secret)
+tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+mlflow.set_tracking_uri(tracking_uri)
 mlflow.set_experiment("Assignment5_Pipeline")
 
 with mlflow.start_run() as run:
@@ -101,3 +103,5 @@ with mlflow.start_run() as run:
 
     with open("model_info.txt", "w") as f:
         f.write(run.info.run_id)
+
+    print(f"Run ID saved: {run.info.run_id}")

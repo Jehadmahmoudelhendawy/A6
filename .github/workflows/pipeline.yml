@@ -1,77 +1,60 @@
-name: A5 Pipeline
+name: Gatekeeper CI Pipeline
 
 on:
   push:
-    branches:
-      - master
+    branches: [main, dev]
+  pull_request:
 
 jobs:
-  validate:
+  linter:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Linter (syntax check)
+        run: |
+          python -m compileall .
+
+  train:
+    runs-on: ubuntu-latest
+    needs: linter
+
+    if: >
+      github.ref == 'refs/heads/main' &&
+      contains(github.event.head_commit.message, '[run-train]')
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: 3.10
 
-      - run: pip install -r requirements.txt
-
-      - name: DVC Pull (Mock)
-        run: echo "Simulating dvc pull..."
-
-      - name: Train
-        run: python train.py
-
-      - name: Upload model info
-        uses: actions/upload-artifact@v4
-        with:
-          name: model-info
-          path: model_info.txt
-
-      - name: Upload mlruns
-        uses: actions/upload-artifact@v4
-        with:
-          name: mlruns-artifact
-          path: mlruns
-      - name: Debug after training
+      - name: Install dependencies
         run: |
-          echo "Run ID:"
-          cat model_info.txt
-          echo "Tree before upload:"
-          ls -R
+          pip install torch torchvision mlflow
 
-  deploy:
+      - name: Run Training Job
+        run: |
+          python train.py
+
+      - name: Create error log file
+        if: failure()
+        run: |
+          echo "Training failed. Check logs." > error_logs.txt
+
+      - name: Upload error logs artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: error_logs
+          path: error_logs.txt
+
+  cleanup:
     runs-on: ubuntu-latest
-    needs: validate
+    if: always()
 
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
-      - run: pip install -r requirements.txt
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: model-info
-          path: .
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: mlruns-artifact
-          path: ./mlruns
-
-      - name: Check Threshold
-        run: python check_threshold.py
-
-      - name: Mock Build
-        run: |
-          echo "Building Docker image for RUN_ID=$(cat model_info.txt)"
-
-      - name: Docker Build
-        run: |
-          docker build --build-arg RUN_ID=$(cat model_info.txt) -t app .
+      - name: Cleanup resources
+        run: echo "Cleaning up temporary cloud volumes..."

@@ -1,4 +1,4 @@
-name: Gatekeeper CI Pipeline
+name: A6 CI Pipeline
 
 on:
   push:

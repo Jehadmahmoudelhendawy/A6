@@ -9,7 +9,7 @@ jobs:
   linter:
     runs-on: ubuntu-latest
     steps:
-      -name: Checkout
+      - name: Checkout
       - uses: actions/checkout@v4
 
       - name: Run Linter (syntax check)

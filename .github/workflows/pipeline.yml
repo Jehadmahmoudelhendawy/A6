@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run Linter (syntax check)
+      - name: Run Linter (syntax check )
         run: |
           python -m compileall .
 

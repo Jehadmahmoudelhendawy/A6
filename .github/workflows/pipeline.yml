@@ -2,7 +2,7 @@ name: A6 CI Pipeline
 
 on:
   push:
-    branches: [main, dev]
+    branches: [master, dev]
   pull_request:
 
 jobs:
@@ -20,7 +20,7 @@ jobs:
     needs: linter
 
     if: >
-      github.ref == 'refs/heads/main' &&
+      github.ref == 'refs/heads/master' &&
       contains(github.event.head_commit.message, '[run-train]')
 
     steps:
@@ -57,4 +57,4 @@ jobs:
 
     steps:
       - name: Cleanup resources
-        run: echo "Cleaning up temporary cloud volumes..."
+        run: echo "Cleaning up temporary cloud volumes"
